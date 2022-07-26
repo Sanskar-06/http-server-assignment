@@ -3,40 +3,48 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 )
 
-type Data struct {
-	Name string `json:"name"`
-	ID   int64  `json:id`
-}
-
-func ReqeustHandler(w http.ResponseWriter, req *http.Request) {
-
-	w.Header().Set("Content-Type", "application/json")
-	dataReturn := Data{
-		Name: "Sanskar Jain",
-		ID:   35,
-	}
-	dataAccept := Data{}
-	switch req.Method {
-	case "GET":
-		err := json.NewEncoder(w).Encode(dataReturn)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-		}
-	case "POST":
-		err := json.NewDecoder(req.Body).Decode(&dataAccept)
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-		}
-		fmt.Fprintf(w, "The input recieved is=>%+v", dataAccept)
-	default:
-		w.WriteHeader(http.StatusNotFound)
-	}
+type User struct {
+	User     string `json:"user"`
+	Password string `json:"pass"`
 }
 
 func main() {
-	http.HandleFunc("/", ReqeustHandler)
-	http.ListenAndServe(":8080", nil)
+	fmt.Println("starting server")
+	http.HandleFunc("/update/user", UserHandler)
+	http.HandleFunc("/get/user", GetHandler)
+
+	http.ListenAndServe("127.0.0.1:8080", nil)
+}
+
+func UserHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, "editting user")
+	u := User{}
+
+	err := json.NewDecoder(r.Body).Decode(&u)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	file, _ := json.Marshal(u)
+	_ = ioutil.WriteFile("test.json", file, 0644)
+}
+
+func GetHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, "fetching users")
+	u := User{}
+
+	content, err := ioutil.ReadFile("test.json")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	_ = json.Unmarshal(content, &u)
+
+	// json.NewEncoder(content).Encode(&u)
+
+	fmt.Printf("%+v", u)
 }
